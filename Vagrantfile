@@ -29,8 +29,9 @@ SCRIPT
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-   config.vm.box = "ws2012_r2_wmf5"
-   config.vm.communicator = "winrm"
+  config.vm.box = "ws2012_r2_wmf5"
+  config.vm.guest = "windows"
+  config.vm.communicator = "winrm"
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -41,41 +42,40 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   
   # Create a forwarded port mapping which allows access to a specific port
   # within the machine from a port on the host machine.
-  config.vm.network "forwarded_port", host: 33389, guest: 3389
-  config.vm.network "forwarded_port", host: 8080, guest: 80
-  config.vm.network "forwarded_port", host: 4443, guest: 443
+  config.vm.network :forwarded_port, host: 33389, guest: 3389
+  config.vm.network :forwarded_port, host: 8080, guest: 80
+  config.vm.network :forwarded_port, host: 4443, guest: 443
 
   # Share an additional folder to the guest VM. The first argument is
   # the path on the host to the actual folder. The second argument is
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
-  config.vm.synced_folder "../Data", GUEST_PROJ_DIR + "/vagrant_data""
+  #config.vm.synced_folder "Data/", GUEST_PROJ_DIR + "/vagrant_data"
 
   # VirtualBox specific configuration so you can fine-tune various
-  config.vm.provider "virtualbox" do |vb|
+  config.vm.provider :virtualbox do |vb|
     # Display the VirtualBox GUI when booting the machine
-    vb.gui = true
-  
-    # Customize the amount of memory on the VM:
-    vb.memory = "4096"
+    #vb.gui = true
+    vb.cpus = 2
+    vb.memory = 4096
   end
   
   # Install DSC Module Dependencies
-  config.vm.provision "shell" do |s|
+  config.vm.provision :shell do |s|
     s.inline = $dscModDepScript
     s.args = [GUEST_MODULE_DIR + "*"]
   end
   
    # Initialize DSC Configuration and Generate MOF file
-  config.vm.provision "shell" do |s|
-    s.path = "DSC/Config/MySiteConfig.ps1"
+  config.vm.provision :shell do |s|
+    s.path = "DSC/Config/SitecoreDscConfig.ps1"
     s.args = [GUEST_HOSTNAME, GUEST_MOF_DIR]
   end
 
   # Apply DSC Configuration
-  config.vm.provision "shell" do |s|
+  config.vm.provision :shell do |s|
     s.inline = "Start-DSCConfiguration -Path $Args[0] -Force -Wait -Verbose -Debug"
-    s.args = [GUEST_MOF_DIR + "MySite\\"]
+    s.args = [GUEST_MOF_DIR + "SetupSitecoreDevelopmentEnv\\"]
   end
     
   # Enable provisioning with a shell script. Additional provisioners such as

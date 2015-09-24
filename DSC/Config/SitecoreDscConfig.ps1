@@ -1,5 +1,5 @@
 
-// Set parameters for host configuration
+#Set parameters for host configuration
 param
 (
     [string]$NodeName = "localhost",
@@ -9,7 +9,7 @@ param
 Write-Host "SetupSitecoreDevelopmentEnv DSC Config :: NodeName=$NodeName, MofFolder=$MofFolder"
 
 # Clean up any existing MOF files
-if (Test-Path(MofFolder)) {
+if (Test-Path($MofFolder)) {
     Remove-Item $MofFolder -Recurse -Force
 }
 
@@ -18,7 +18,7 @@ New-Item -ItemType directory -Path $MofFolder | Out-Null
 Set-Location $MofFolder | Out-Null
 
 		
-configuration SetupSitecoreDevelopmentEnv {
+Configuration SetupSitecoreDevelopmentEnv {
 	# Import the module that defines custom resources
 	Import-DscResource -Module xWebAdministration
 			
@@ -28,25 +28,32 @@ configuration SetupSitecoreDevelopmentEnv {
 		# Install the IIS role
 		WindowsFeature IIS
 		{
-			Ensure          = "Present"
-			Name            = "Web-Server"
+			Ensure = "Present"
+			Name = "Web-Server"
 		}
+
+        #Install Web Management Console
+        WindowsFeature InstallIISConsole
+        {
+            Ensure = "Present"
+            Name = "Web-Mgmt-Console"
+        }
 		 
 		# Install the ASP .NET 4.5 role
 		WindowsFeature AspNet45
 		{
-			Ensure          = "Present"
-			Name            = "Web-Asp-Net45"
+			Ensure = "Present"
+			Name = "Web-Asp-Net45"
 		}
 		 
-		Stop an existing website (set up in Sample_xWebsite_Default)
+		#Stop an existing website (set up in Sample_xWebsite_Default)
 		xWebsite DefaultSite
 		{
-			Ensure          = "Present"
-			Name            = "Default Web Site"
-			State           = "Stopped"
-			PhysicalPath    = $Node.DefaultWebSitePath
-			DependsOn       = "[WindowsFeature]IIS"
+			Ensure = "Present"
+			Name = "Default Web Site"
+			State = "Stopped"
+			PhysicalPath = $Node.DefaultWebSitePath
+			DependsOn = "[WindowsFeature]IIS"
 		}
 		 
 		<# Copy the website content
@@ -75,22 +82,20 @@ configuration SetupSitecoreDevelopmentEnv {
 		
 }
 
-$ConfigData = 
-@{
-		AllNodes = 
-		@(
-			@{
-				NodeName = "*"
-				MofFolder = "C:\temp\MOF\"
-				DefaultWebSitePath = "C:\inetpub\wwwroot\"
-			},		
-			@{
-				NodeName = "localhost"
-				Role = "SitecoreDevelopment"
-                WebsiteName = "HelloWorld"
-			}
-		);
+$ConfigurationData = @{
+	AllNodes = @(
+		@{
+			NodeName = "*"
+			MofFolder = "C:\temp\MOF\"
+			DefaultWebSitePath = "C:\inetpub\wwwroot\"
+		},		
+		@{
+			NodeName = "localhost"
+			Role = "SitecoreDevelopment"
+            WebsiteName = "HelloWorld"
+		}
+	)
 }
 
-MySite -ConfigurationData $ConfigData -NodeName $NodeName
+SetupSitecoreDevelopmentEnv -ConfigurationData $ConfigurationData
 
